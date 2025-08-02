@@ -20,6 +20,14 @@ app = FastAPI()
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from pymongo import MongoClient
+import os
+
+
+MONGO_URL = os.getenv("MONGO_URI")
+client = MongoClient(MONGO_URL)
+db = client["kannada_bot_db"]  # Database name
+feedback_collection = db["feedback"]  # Collection name
 
 
 
@@ -214,18 +222,20 @@ async def force_cleanup():
         return JSONResponse({"error": "Cleanup failed."}, status_code=500)
 
 
+
 @app.post("/submit_feedback")
-async def submit_feedback(request: Request):
+async def save_feedback(request: Request):
     data = await request.json()
-    feedback = data.get("feedback")
-    timestamp = data.get("timestamp")
+    feedback = data.get("feedback", "")
+    timestamp = data.get("timestamp", "")
 
-    entry = {
-        "feedback": feedback,
-        "timestamp": timestamp or str(datetime.now())
-    }
+    if feedback:
+        feedback_collection.insert_one({
+            "message": feedback,
+            "timestamp": timestamp
+        })
+        return {"status": "success", "message": "Feedback saved to MongoDB"}
+    
+    return {"status": "fail", "message": "No feedback provided"}
 
-    with open("feedback.txt", "a", encoding="utf-8") as f:
-        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
-    return {"message": "Feedback saved"}
