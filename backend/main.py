@@ -223,20 +223,33 @@ async def force_cleanup():
 
 
 
+
 @app.post("/submit_feedback")
 async def save_feedback(request: Request):
-    data = await request.json()
-    feedback = data.get("feedback", "")
-    timestamp = data.get("timestamp", "")
-    print("[DEBUG] Received feedback:", data) 
+    try:
+        print("[DEBUG] /submit_feedback route called")
 
-    if feedback:
+        data = await request.json()
+        print("[DEBUG] JSON data received:", data)
+
+        feedback = data.get("feedback", "")
+        timestamp = data.get("timestamp", "")
+
+        if not feedback:
+            print("[DEBUG] Empty feedback received.")
+            return JSONResponse(status_code=400, content={"status": "fail", "message": "No feedback provided"})
+
+        print("[DEBUG] Inserting into DB:", {"message": feedback, "timestamp": timestamp})
         feedback_collection.insert_one({
             "message": feedback,
             "timestamp": timestamp
         })
+
+        print("[DEBUG] Feedback successfully saved.")
         return {"status": "success", "message": "Feedback saved to MongoDB"}
-    
-    return {"status": "fail", "message": "No feedback provided"}
+
+    except Exception as e:
+        print("[ERROR] Exception in /submit_feedback:", str(e))
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Internal Server Error"})
 
 

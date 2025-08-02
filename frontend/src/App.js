@@ -228,19 +228,35 @@ const App = () => {
               <button
                 onClick={async () => {
                   if (!feedbackText.trim()) return;
-                  try {
-                    await axios.post("https://kannada-chatbot.onrender.com/submit_feedback", {
-                      feedback: feedbackText,
-                      timestamp: new Date().toISOString(),
-                    });
-                  
-                    alert("🙏 ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಪಡೆದುಕೊಂಡೆವು.");
-                    setFeedbackText("");
-                    setShowFeedback(false);
-                  } catch (err) {
-                    alert("❌ ಅಭಿಪ್ರಾಯ ಕಳುಹಿಸುವಲ್ಲಿ ದೋಷವಾಯಿತು.");
-                    console.error("Feedback error:", err);
-                  }
+                 try {
+  console.log("[DEBUG] Submitting feedback:", feedbackText);
+
+  const res = await axios.post(
+    "https://kannada-chatbot.onrender.com/submit_feedback",
+    {
+      feedback: feedbackText,
+      timestamp: new Date().toISOString(),
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  console.log("[DEBUG] Server response:", res.data);
+
+  alert("🙏 ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಪಡೆದುಕೊಂಡೆವು.");
+  setFeedbackText("");
+  setShowFeedback(false);
+
+} catch (err) {
+  console.error("[ERROR] Axios request failed:", err.message);
+  console.log("[ERROR] Full Axios error object:", err);
+
+  alert("❌ ಅಭಿಪ್ರಾಯ ಕಳುಹಿಸುವಲ್ಲಿ ದೋಷವಾಯಿತು.");
+}
+
                 }}
               >
                 ✉️ ಕಳುಹಿಸಿ
