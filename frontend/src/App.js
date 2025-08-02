@@ -5,11 +5,10 @@ import axios from "axios";
 const App = () => {
   const [chat, setChat] = useState([]);
   const [status, setStatus] = useState("▶️ ಆರಂಭಿಸಲು ಸ್ಟಾರ್ಟ್‌ ಬಟನ್‌ ಒತ್ತಿ");
-  const [appState, setAppState] = useState("idle"); // idle | listening | processing | speaking
+  const [appState, setAppState] = useState("idle");
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState("");
   const [hasInteracted, setHasInteracted] = useState(false);
-
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -21,12 +20,10 @@ const App = () => {
   const dataArrayRef = useRef(null);
   const volumeHistory = useRef([]);
 
-
   const startRecording = async () => {
-    setShowFeedback(false);  // Hide feedback box if visible
-    setFeedbackText("");     // Clear old feedback
-    setHasInteracted(true);  // ✅ user interacted at least once
-
+    setShowFeedback(false);
+    setFeedbackText("");
+    setHasInteracted(true);
 
     setAppState("listening");
     setStatus("🎤 ಧ್ವನಿಯನ್ನು ಕೇಳುತ್ತಿದೆ...");
@@ -52,7 +49,15 @@ const App = () => {
       }
     };
 
-    recorder.onstop = async () => {
+    recorder.start();
+  };
+
+  const handleSilentSubmit = async () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state !== "recording") return;
+
+    mediaRecorderRef.current.stop();
+
+    mediaRecorderRef.current.onstop = async () => {
       isRunningRef.current = false;
 
       if (audioChunksRef.current.length === 0) return;
@@ -72,7 +77,7 @@ const App = () => {
       setStatus("🔄 ಪ್ರಕ್ರಿಯೆ ನಡೆಯುತ್ತಿದೆ...");
 
       try {
-        const res = await fetch('http://localhost:8000/voice', {
+        const res = await fetch("https://kannada-chatbot.onrender.com/voice", {
           method: 'POST',
           body: formData,
         });
@@ -87,19 +92,8 @@ const App = () => {
         audio.play();
 
         audio.onended = () => {
-          setStatus("🧹 ಶುದ್ಧಗೊಳಿಸಲಾಗುತ್ತಿದೆ...");
-
-          axios.post("http://localhost:8000/force_cleanup")
-            .then(res => {
-              console.log("[CLEANUP] Done:", res.data);
-            })
-            .catch(err => {
-              console.error("[CLEANUP] Failed:", err);
-            })
-            .finally(() => {
-              setStatus("🎤 ಮತ್ತೆ ಕೇಳುತ್ತಿದೆ...");
-              startRecording(); // Repeat
-            });
+          setStatus("🎤 ಮತ್ತೆ ಕೇಳುತ್ತಿದೆ...");
+          startRecording(); // auto-restart
         };
       } catch (err) {
         console.error('❌ Backend error:', err);
@@ -107,36 +101,36 @@ const App = () => {
         setAppState("idle");
       }
     };
-
-    recorder.start();
   };
 
-  const stopRecording = async () => {
+  const stopRecording = async (shouldClear = true) => {
     setAppState("idle");
     setStatus("🛑 ಧ್ವನಿ ನಿಲ್ಲಿಸಲಾಗಿದೆ...");
     isRunningRef.current = false;
-    setShowFeedback(true); // 👈 Show feedback section
+    setShowFeedback(true);
 
     if (mediaRecorderRef.current?.state === "recording") {
       mediaRecorderRef.current.stop();
     }
 
-     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-    try {
-      await audioContextRef.current.close();
-      audioContextRef.current = null; // clear reference
-    } catch (err) {
-      console.warn("⚠️ AudioContext close error:", err.message);
+    if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+      try {
+        await audioContextRef.current.close();
+        audioContextRef.current = null;
+      } catch (err) {
+        console.warn("⚠️ AudioContext close error:", err.message);
+      }
     }
-  }
 
     clearTimeout(silenceTimerRef.current);
 
-    try {
-      const res = await axios.post("http://localhost:8000/clear_chat");
-      console.log("[CLEAR] Response from server:", res.data);
-    } catch (err) {
-      console.error("[CLEAR] Failed to clear chat history:", err);
+    if (shouldClear) {
+      try {
+        const res = await axios.post("https://kannada-chatbot.onrender.com/clear_chat");
+        console.log("[CLEAR] Response from server:", res.data);
+      } catch (err) {
+        console.error("[CLEAR] Failed to clear chat history:", err);
+      }
     }
   };
 
@@ -152,7 +146,7 @@ const App = () => {
       if (normalized < 5) {
         if (!silenceTimerRef.current) {
           silenceTimerRef.current = setTimeout(() => {
-            stopRecording();
+            handleSilentSubmit(); // ✅ only process, don't show feedback or clear chat
           }, 2000);
         }
       } else {
@@ -171,7 +165,17 @@ const App = () => {
   };
 
   useEffect(() => {
-    return () => stopRecording();
+    return () => {
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.stop();
+      }
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current.close().catch(err =>
+          console.warn("AudioContext close error on unmount:", err)
+        );
+      }
+      clearTimeout(silenceTimerRef.current);
+    };
   }, []);
 
   const renderStatusAnimation = () => {
@@ -190,7 +194,6 @@ const App = () => {
   return (
     <div className="app-container">
       <div className="caution-footer">
-        
         ⚠️ ಎಚ್ಚರಿಕೆ: ಈ ಚಾಟ್‌ಬಾಟ್ ಉತ್ತರಗಳು ಯಾವಾಗಲೂ ನಿಖರವಾಗಿಲ್ಲ. ತಪ್ಪಾದ ಮಾಹಿತಿ ಸಾಧ್ಯ. ದಯವಿಟ್ಟು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.
       </div>
 
@@ -211,42 +214,41 @@ const App = () => {
         ))}
       </div>
 
-{hasInteracted && appState === "idle" && showFeedback && (
-  <div className="feedback-overlay">
-    <div className="feedback-popup">
-      <h3>💬 ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ನಮಗೆ ತಿಳಿಸಿ:</h3>
-      <textarea
-        rows={4}
-        placeholder="ಇಲ್ಲಿ ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಬರೆಯಿರಿ..."
-        value={feedbackText}
-        onChange={(e) => setFeedbackText(e.target.value)}
-      />
-      <div className="feedback-buttons">
-        <button
-          onClick={async () => {
-            if (!feedbackText.trim()) return;
-            try {
-              await axios.post("http://localhost:8000/submit_feedback", {
-                feedback: feedbackText,
-                timestamp: new Date().toISOString(),
-              });
-              alert("🙏 ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಪಡೆದುಕೊಂಡೆವು.");
-              setFeedbackText("");
-              setShowFeedback(false);
-            } catch (err) {
-              alert("❌ ಅಭಿಪ್ರಾಯ ಕಳುಹಿಸುವಲ್ಲಿ ದೋಷವಾಯಿತು.");
-              console.error("Feedback error:", err);
-            }
-          }}
-        >
-          ✉️ ಕಳುಹಿಸಿ
-        </button>
-        <button onClick={() => setShowFeedback(false)}>❌ ಮುಚ್ಚು</button>
-      </div>
-    </div>
-  </div>
-)}
-
+      {hasInteracted && appState === "idle" && showFeedback && (
+        <div className="feedback-overlay">
+          <div className="feedback-popup">
+            <h3>💬 ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ನಮಗೆ ತಿಳಿಸಿ:</h3>
+            <textarea
+              rows={4}
+              placeholder="ಇಲ್ಲಿ ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಬರೆಯಿರಿ..."
+              value={feedbackText}
+              onChange={(e) => setFeedbackText(e.target.value)}
+            />
+            <div className="feedback-buttons">
+              <button
+                onClick={async () => {
+                  if (!feedbackText.trim()) return;
+                  try {
+                    await axios.post("https://kannada-chatbot.onrender.com/submit_feedback", {
+                      feedback: feedbackText,
+                      timestamp: new Date().toISOString(),
+                    });
+                    alert("🙏 ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಪಡೆದುಕೊಂಡೆವು.");
+                    setFeedbackText("");
+                    setShowFeedback(false);
+                  } catch (err) {
+                    alert("❌ ಅಭಿಪ್ರಾಯ ಕಳುಹಿಸುವಲ್ಲಿ ದೋಷವಾಯಿತು.");
+                    console.error("Feedback error:", err);
+                  }
+                }}
+              >
+                ✉️ ಕಳುಹಿಸಿ
+              </button>
+              <button onClick={() => setShowFeedback(false)}>❌ ಮುಚ್ಚು</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
