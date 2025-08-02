@@ -135,21 +135,21 @@ async def get_audio(filename: str):
     print(f"[200] Serving audio file: {filename}")
     return FileResponse(path)
 
-def delete_files_in_directory(directory):
-    if not os.path.exists(directory):
-        print(f"[SKIP] Directory does not exist: {directory}")
-        return
+# def delete_files_in_directory(directory):
+#     if not os.path.exists(directory):
+#         print(f"[SKIP] Directory does not exist: {directory}")
+#         return
 
-    for filename in os.listdir(directory):
-        file_path = os.path.join(directory, filename)
-        if os.path.isfile(file_path):
-            try:
-                os.remove(file_path)
-                print(f"[DELETE] Removed file: {file_path}")
-            except Exception as e:
-                print(f"[ERROR] Could not delete {file_path}: {e}")
-        else:
-            print(f"[SKIP] Not a file: {file_path}")
+#     for filename in os.listdir(directory):
+#         file_path = os.path.join(directory, filename)
+#         if os.path.isfile(file_path):
+#             try:
+#                 os.remove(file_path)
+#                 print(f"[DELETE] Removed file: {file_path}")
+#             except Exception as e:
+#                 print(f"[ERROR] Could not delete {file_path}: {e}")
+#         else:
+#             print(f"[SKIP] Not a file: {file_path}")
 
 # @app.post("/clear_chat")
 # async def clear_chat():
