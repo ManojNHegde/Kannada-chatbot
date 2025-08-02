@@ -7,4 +7,5 @@ deep-translator
 python-dotenv
 openai
 python-multipart
+pymongo
 
