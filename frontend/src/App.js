@@ -233,6 +233,7 @@ const App = () => {
                       feedback: feedbackText,
                       timestamp: new Date().toISOString(),
                     });
+                  
                     alert("🙏 ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಅಭಿಪ್ರಾಯವನ್ನು ಪಡೆದುಕೊಂಡೆವು.");
                     setFeedbackText("");
                     setShowFeedback(false);

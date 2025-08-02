@@ -228,6 +228,7 @@ async def save_feedback(request: Request):
     data = await request.json()
     feedback = data.get("feedback", "")
     timestamp = data.get("timestamp", "")
+    print("[DEBUG] Received feedback:", data) 
 
     if feedback:
         feedback_collection.insert_one({
