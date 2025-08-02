@@ -89,7 +89,7 @@ async def handle_voice(file: UploadFile = File(...)):
         response_data = {
             "user_text": user_text,
             "bot_text": kannada_reply,
-            "audio_url": f"http://localhost:8000/static/audio/{file_id}.mp3"
+            "audio_url": f"https://kannada-chatbot.onrender.com/static/audio/{file_id}.mp3"
         }
 
         # Delay return to ensure frontend can fetch the audio before deletion
