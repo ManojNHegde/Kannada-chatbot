@@ -56,42 +56,39 @@ async def handle_voice(file: UploadFile = File(...)):
         ext = file.filename.split('.')[-1]
         file_id = str(uuid.uuid4())
         input_path = os.path.join(UPLOAD_DIR, f"{file_id}.{ext}")
-        print(f"[UPLOAD] Saving file as: {input_path}")
+        
         with open(input_path, "wb") as f:
             f.write(await file.read())
 
         # Step 2: Convert to WAV if needed
         if not input_path.endswith(".wav"):
             wav_path = input_path.replace(f".{ext}", ".wav")
-            print(f"[CONVERT] Converting to WAV: {wav_path}")
             subprocess.run(["ffmpeg", "-i", input_path, wav_path, "-y"], check=True)
         else:
             wav_path = input_path
-        print("[CONVERT] Conversion done.")
 
         # Step 3: Kannada Speech Recognition
         recognizer = sr.Recognizer()
         with sr.AudioFile(wav_path) as source:
             audio_data = recognizer.record(source)
-            print("[SPEECH] Performing recognition...")
+           
             user_text = recognizer.recognize_google(audio_data, language="kn-IN")
-        print(f"[SPEECH] User said: {user_text}")
-
+        
         # Step 4: LLM Response
-        print("[LLM] Sending to LLaMA/LLM...")
+        
         bot_reply = ask_llama(user_text)
-        print(f"[LLM] English reply: {bot_reply}")
+        
 
         # Step 5: Translate to Kannada
-        print("[TRANSLATE] Translating to Kannada...")
+     
         kannada_reply = translate_en_to_kn(bot_reply)
-        print(f"[TRANSLATE] Kannada reply: {kannada_reply}")
+        
 
         # Step 6: Convert Kannada text to audio
         output_audio_path = os.path.join(AUDIO_OUT_DIR, f"{file_id}.mp3")
         tts = gTTS(kannada_reply, lang='kn')
         tts.save(output_audio_path)
-        print(f"[AUDIO] Saved to: {output_audio_path}")
+       
 
         # Step 7: Prepare response before deleting
         response_data = {
@@ -106,13 +103,13 @@ async def handle_voice(file: UploadFile = File(...)):
         return JSONResponse(response_data)
 
     except sr.UnknownValueError:
-        print("[ERROR] Could not understand audio.")
+        
         return JSONResponse({"error": "Could not understand the audio."}, status_code=400)
     except subprocess.CalledProcessError:
-        print("[ERROR] Audio conversion failed.")
+        
         return JSONResponse({"error": "Audio conversion failed."}, status_code=500)
     except Exception as e:
-        print("[ERROR] Exception occurred:")
+      
         traceback.print_exc()
         return JSONResponse({"error": str(e)}, status_code=500)
     
@@ -124,13 +121,13 @@ async def clear_chat():
         # Clear contents if file exists
         if os.path.exists(file_path):
             open(file_path, 'w').close()
-            print("[CLEAR] conversation_history.txt cleared.")
+           
             return JSONResponse({"message": "Chat history cleared successfully."})
         else:
-            print("[CLEAR] File does not exist. Nothing to clear.")
+            
             return JSONResponse({"message": "File not found. Nothing to clear."}, status_code=404)
     except Exception as e:
-        print(f"[ERROR] Failed to clear chat history: {str(e)}")
+      
         return JSONResponse({"error": "Failed to clear chat history."}, status_code=500)
 
 
@@ -138,9 +135,9 @@ async def clear_chat():
 async def get_audio(filename: str):
     path = os.path.join(AUDIO_OUT_DIR, filename)
     if not os.path.exists(path):
-        print(f"[404] Audio file not found: {filename}")
+      
         return JSONResponse({"error": "File not found"}, status_code=404)
-    print(f"[200] Serving audio file: {filename}")
+  
     return FileResponse(path)
 
 # def delete_files_in_directory(directory):
@@ -195,7 +192,7 @@ async def get_audio(filename: str):
 
 def delete_files_in_directory(directory):
     if not os.path.exists(directory):
-        print(f"[SKIP] Directory does not exist: {directory}")
+    
         return
 
     for filename in os.listdir(directory):
@@ -212,44 +209,53 @@ def delete_files_in_directory(directory):
 @app.post("/force_cleanup")
 async def force_cleanup():
     try:
-        print("[START] Cleaning files from uploads and static/audio...")
+     
         delete_files_in_directory(UPLOAD_DIR)
         delete_files_in_directory(AUDIO_OUT_DIR)
-        print("[DONE] Cleanup successful.")
+      
         return JSONResponse({"message": "All temporary files deleted."})
     except Exception as e:
-        print(f"[ERROR] Cleanup failed: {e}")
+  
         return JSONResponse({"error": "Cleanup failed."}, status_code=500)
 
 
 
+from datetime import datetime
+import pytz
 
 @app.post("/submit_feedback")
 async def save_feedback(request: Request):
     try:
-        print("[DEBUG] /submit_feedback route called")
+        
 
         data = await request.json()
-        print("[DEBUG] JSON data received:", data)
+        
 
         feedback = data.get("feedback", "")
         timestamp = data.get("timestamp", "")
 
         if not feedback:
-            print("[DEBUG] Empty feedback received.")
             return JSONResponse(status_code=400, content={"status": "fail", "message": "No feedback provided"})
 
-        print("[DEBUG] Inserting into DB:", {"message": feedback, "timestamp": timestamp})
+        # Convert timestamp to IST
+        try:
+            utc_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            ist_time = utc_time.astimezone(pytz.timezone("Asia/Kolkata"))
+        except Exception as time_error:
+            return JSONResponse(status_code=400, content={"status": "fail", "message": "Invalid timestamp"})
+
+       
         feedback_collection.insert_one({
             "message": feedback,
-            "timestamp": timestamp
+            "timestamp": ist_time.isoformat()
         })
 
-        print("[DEBUG] Feedback successfully saved.")
+       
         return {"status": "success", "message": "Feedback saved to MongoDB"}
 
     except Exception as e:
-        print("[ERROR] Exception in /submit_feedback:", str(e))
+        
         return JSONResponse(status_code=500, content={"status": "error", "message": "Internal Server Error"})
+
 
 
