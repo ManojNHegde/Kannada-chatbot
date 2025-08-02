@@ -6,3 +6,5 @@ speechrecognition
 deep-translator
 python-dotenv
 openai
+python-multipart
+
