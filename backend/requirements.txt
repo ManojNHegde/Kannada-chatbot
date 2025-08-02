@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+gtts
+pydub
+speechrecognition
+deep-translator
+python-dotenv
+openai

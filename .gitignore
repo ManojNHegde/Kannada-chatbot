@@ -1,0 +1,67 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Audio files (optional if generated at runtime)
+*.wav
+*.mp3
+
+# Model files and indexes
+models/
+*.ckpt
+*.pt
+*.onnx
+*.h5
+*.pb
+*.tflite
+*.index
+*.npy
+*.npz
+
+# FAISS or other embedding indexes
+**/faiss_index/
+
+# Streamlit cache
+.streamlit/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# VSCode settings (if using)
+.vscode/
+
+# Logs
+*.log
+
+# Token or secret files
+.env
+*.env
+secrets.json
+
+# Pip wheel cache
+*.whl
+pip-wheel-metadata/
+
+# Coverage and testing
+htmlcov/
+.tox/
+.nox/
+coverage.*
+.cache
+pytest_cache/
+
+# Temporary files
+*.bak
+*.tmp
+*.temp

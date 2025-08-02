@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: voice-backend
+    env: python
+    buildCommand: ""
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
+    workingDir: backend
+    autoDeploy: true
+
+  - type: web
+    name: voice-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    workingDir: frontend
+    autoDeploy: true
