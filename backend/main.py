@@ -26,7 +26,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # CORS settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "https://your-frontend.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -151,38 +151,38 @@ def delete_files_in_directory(directory):
         else:
             print(f"[SKIP] Not a file: {file_path}")
 
-@app.post("/clear_chat")
-async def clear_chat():
-    try:
-        history_file = "conversation_history.txt"
-        if os.path.exists(history_file):
-            with open(history_file, 'w') as f:
-                f.truncate(0)
-            print(f"[CLEAR] {history_file} cleared.")
-        else:
-            print(f"[CLEAR] {history_file} does not exist.")
+# @app.post("/clear_chat")
+# async def clear_chat():
+#     try:
+#         history_file = "conversation_history.txt"
+#         if os.path.exists(history_file):
+#             with open(history_file, 'w') as f:
+#                 f.truncate(0)
+#             print(f"[CLEAR] {history_file} cleared.")
+#         else:
+#             print(f"[CLEAR] {history_file} does not exist.")
 
-        for dir_path in [UPLOAD_DIR, AUDIO_OUT_DIR]:
-            if os.path.exists(dir_path):
-                print(f"[CLEANUP] Looking inside: {dir_path}")
-                for filename in os.listdir(dir_path):
-                    file_path = os.path.join(dir_path, filename)
-                    if os.path.isfile(file_path):
-                        try:
-                            os.remove(file_path)
-                            print(f"[CLEANUP] Deleted file: {file_path}")
-                        except Exception as e:
-                            print(f"[CLEANUP ERROR] Failed to delete {file_path}: {e}")
-                    else:
-                        print(f"[SKIP] Not a file: {file_path}")
-            else:
-                print(f"[CLEANUP] Directory does not exist: {dir_path}")
+#         for dir_path in [UPLOAD_DIR, AUDIO_OUT_DIR]:
+#             if os.path.exists(dir_path):
+#                 print(f"[CLEANUP] Looking inside: {dir_path}")
+#                 for filename in os.listdir(dir_path):
+#                     file_path = os.path.join(dir_path, filename)
+#                     if os.path.isfile(file_path):
+#                         try:
+#                             os.remove(file_path)
+#                             print(f"[CLEANUP] Deleted file: {file_path}")
+#                         except Exception as e:
+#                             print(f"[CLEANUP ERROR] Failed to delete {file_path}: {e}")
+#                     else:
+#                         print(f"[SKIP] Not a file: {file_path}")
+#             else:
+#                 print(f"[CLEANUP] Directory does not exist: {dir_path}")
 
-        return JSONResponse({"message": "Chat history and audio files cleared successfully."})
+#         return JSONResponse({"message": "Chat history and audio files cleared successfully."})
 
-    except Exception as e:
-        print(f"[ERROR] Failed to clear chat/audio: {str(e)}")
-        return JSONResponse({"error": "Failed to clear chat/audio."}, status_code=500)
+#     except Exception as e:
+#         print(f"[ERROR] Failed to clear chat/audio: {str(e)}")
+#         return JSONResponse({"error": "Failed to clear chat/audio."}, status_code=500)
 
 
 def delete_files_in_directory(directory):
